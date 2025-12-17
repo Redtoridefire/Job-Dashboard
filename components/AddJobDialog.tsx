@@ -26,6 +26,7 @@ import { useAppStore } from '@/lib/store'
 
 type Application = Database['public']['Tables']['applications']['Row']
 type ApplicationInsert = Database['public']['Tables']['applications']['Insert']
+type ApplicationUpdate = Database['public']['Tables']['applications']['Update']
 
 interface AddJobDialogProps {
   open: boolean
@@ -95,7 +96,7 @@ export default function AddJobDialog({
         // Update existing application
         const { data, error } = await supabase
           .from('applications')
-          .update(formData)
+          .update(formData as ApplicationUpdate)
           .eq('id', editingApplication.id)
           .select()
           .single()
