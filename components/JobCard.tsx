@@ -5,14 +5,16 @@ import { Database } from '@/types/database'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { 
-  MapPin, 
-  DollarSign, 
-  Calendar, 
-  ExternalLink, 
+import {
+  MapPin,
+  DollarSign,
+  Calendar,
+  ExternalLink,
   MoreVertical,
   Pencil,
-  Trash2
+  Trash2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import {
@@ -21,6 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import InterviewList from './InterviewList'
 
 type Application = Database['public']['Tables']['applications']['Row']
 
@@ -49,6 +52,7 @@ const priorityColors = {
 
 export default function JobCard({ application, onEdit, onDelete, onStatusChange }: JobCardProps) {
   const [isHovered, setIsHovered] = useState(false)
+  const [showInterviews, setShowInterviews] = useState(false)
 
   const formatSalary = (min?: number | null, max?: number | null) => {
     if (!min && !max) return null
@@ -136,16 +140,38 @@ export default function JobCard({ application, onEdit, onDelete, onStatusChange 
           </div>
         )}
 
-        {application.job_url && (
+        <div className="flex gap-2 mt-2">
+          {application.job_url && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={() => window.open(application.job_url!, '_blank')}
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              View Posting
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
-            className="w-full mt-2"
-            onClick={() => window.open(application.job_url!, '_blank')}
+            className={application.job_url ? 'flex-1' : 'w-full'}
+            onClick={() => setShowInterviews(!showInterviews)}
           >
-            <ExternalLink className="mr-2 h-4 w-4" />
-            View Posting
+            <Calendar className="mr-2 h-4 w-4" />
+            Interviews
+            {showInterviews ? (
+              <ChevronUp className="ml-2 h-4 w-4" />
+            ) : (
+              <ChevronDown className="ml-2 h-4 w-4" />
+            )}
           </Button>
+        </div>
+
+        {showInterviews && (
+          <div className="mt-3 pt-3 border-t">
+            <InterviewList applicationId={application.id} />
+          </div>
         )}
 
         <p className="text-xs text-muted-foreground mt-2">

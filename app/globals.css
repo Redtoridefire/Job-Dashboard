@@ -2,6 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/* React Big Calendar styles customization */
+.rbc-calendar {
+  font-family: inherit;
+}
+
+.rbc-event {
+  padding: 2px 5px;
+  cursor: pointer;
+}
+
+.rbc-event:hover {
+  opacity: 1 !important;
+}
+
+.rbc-toolbar button {
+  color: inherit;
+  border-color: hsl(var(--border));
+}
+
+.rbc-toolbar button:hover,
+.rbc-toolbar button:focus,
+.rbc-toolbar button.rbc-active {
+  background-color: hsl(var(--accent));
+  border-color: hsl(var(--border));
+}
+
+.rbc-header {
+  padding: 10px 3px;
+  font-weight: 500;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.rbc-today {
+  background-color: hsl(var(--accent) / 0.1);
+}
+
+.rbc-off-range-bg {
+  background-color: hsl(var(--muted) / 0.3);
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

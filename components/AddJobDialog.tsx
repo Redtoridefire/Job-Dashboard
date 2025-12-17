@@ -112,6 +112,7 @@ export default function AddJobDialog({
           deadline: formData.deadline,
         }
 
+        // @ts-ignore - Supabase type inference issue with update
         const { data, error } = await supabase
           .from('applications')
           .update(updateData as any)
@@ -120,17 +121,17 @@ export default function AddJobDialog({
           .single()
 
         if (error) throw error
-        if (data) updateApplication(data.id, data)
+        if (data) updateApplication((data as any).id, data as any)
       } else {
         // Create new application
         const { data, error } = await supabase
           .from('applications')
-          .insert({ ...formData, user_id: userId })
+          .insert({ ...formData, user_id: userId } as any)
           .select()
           .single()
 
         if (error) throw error
-        if (data) addApplication(data)
+        if (data) addApplication(data as any)
       }
 
       onOpenChange(false)
