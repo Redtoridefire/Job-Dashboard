@@ -10,6 +10,7 @@ import { Plus, LayoutGrid, Table as TableIcon, Calendar as CalendarIcon } from '
 import AddJobDialog from './AddJobDialog'
 import BoardView from './BoardView'
 import StatsCards from './StatsCards'
+import TableView from './TableView'
 
 type Application = Database['public']['Tables']['applications']['Row']
 
@@ -145,9 +146,12 @@ export default function Dashboard({ userId }: DashboardProps) {
         </TabsContent>
 
         <TabsContent value="table" className="mt-6">
-          <div className="border rounded-lg p-8 text-center text-muted-foreground">
-            Table view coming soon...
-          </div>
+          <TableView
+            applications={applications}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onStatusChange={handleStatusChange}
+          />
         </TabsContent>
       </Tabs>
 
