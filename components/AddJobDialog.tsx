@@ -114,7 +114,7 @@ export default function AddJobDialog({
 
         const { data, error } = await supabase
           .from('applications')
-          .update(updateData)
+          .update(updateData as any)
           .eq('id', editingApplication.id)
           .select()
           .single()
