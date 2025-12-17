@@ -114,7 +114,7 @@ export default function AddJobDialog({
 
         const { data, error } = await supabase
           .from('applications')
-          .update(updateData as any)
+          .update(updateData)
           .eq('id', editingApplication.id)
           .select()
           .single()
@@ -123,9 +123,27 @@ export default function AddJobDialog({
         if (data) updateApplication(data.id, data)
       } else {
         // Create new application
+        const insertData: Database['public']['Tables']['applications']['Insert'] = {
+          user_id: userId,
+          company: formData.company!,
+          role: formData.role!,
+          location: formData.location,
+          work_type: formData.work_type,
+          salary_min: formData.salary_min,
+          salary_max: formData.salary_max,
+          job_url: formData.job_url,
+          job_description: formData.job_description,
+          priority: formData.priority,
+          status: formData.status,
+          tags: formData.tags,
+          referral_name: formData.referral_name,
+          hiring_manager: formData.hiring_manager,
+          notes: formData.notes,
+          deadline: formData.deadline,
+        }
         const { data, error } = await supabase
           .from('applications')
-          .insert({ ...formData, user_id: userId })
+          .insert(insertData)
           .select()
           .single()
 
