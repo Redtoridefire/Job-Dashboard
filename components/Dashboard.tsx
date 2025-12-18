@@ -9,9 +9,15 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Plus, LayoutGrid, Table as TableIcon, Calendar as CalendarIcon } from 'lucide-react'
 import AddJobDialog from './AddJobDialog'
 import BoardView from './BoardView'
+import TableView from './TableView'
+import CalendarView from './CalendarView'
+import SearchFilter from './SearchFilter'
+import InterviewDialog from './InterviewDialog'
 import StatsCards from './StatsCards'
+import { exportApplicationsToCSV } from '@/lib/export'
 
 type Application = Database['public']['Tables']['applications']['Row']
+type Interview = Database['public']['Tables']['interviews']['Row']
 
 interface DashboardProps {
   userId: string
@@ -21,25 +27,55 @@ export default function Dashboard({ userId }: DashboardProps) {
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingApplication, setEditingApplication] = useState<Application | null>(null)
-  const { applications, setApplications, deleteApplication, updateApplication } = useAppStore()
+  const [interviewDialogOpen, setInterviewDialogOpen] = useState(false)
+  const [selectedApplicationForInterview, setSelectedApplicationForInterview] = useState<Application | null>(null)
+
+  const {
+    applications,
+    setApplications,
+    deleteApplication,
+    updateApplication,
+    interviews,
+    setInterviews,
+    filterStatus,
+    filterPriority,
+    filterWorkType,
+    searchQuery,
+    setFilterStatus,
+    setFilterPriority,
+    setFilterWorkType,
+    setSearchQuery,
+    getFilteredApplications,
+  } = useAppStore()
+
   const supabase = createClient()
 
   useEffect(() => {
-    loadApplications()
+    loadData()
   }, [])
 
-  const loadApplications = async () => {
+  const loadData = async () => {
     try {
-      const { data, error } = await supabase
-        .from('applications')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
+      // Load applications and interviews in parallel
+      const [applicationsResult, interviewsResult] = await Promise.all([
+        supabase
+          .from('applications')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('interviews')
+          .select('*')
+          .order('interview_date', { ascending: true }),
+      ])
 
-      if (error) throw error
-      setApplications(data || [])
+      if (applicationsResult.error) throw applicationsResult.error
+      if (interviewsResult.error) throw interviewsResult.error
+
+      setApplications(applicationsResult.data || [])
+      setInterviews(interviewsResult.data || [])
     } catch (error) {
-      console.error('Error loading applications:', error)
+      console.error('Error loading data:', error)
     } finally {
       setLoading(false)
     }
@@ -90,6 +126,33 @@ export default function Dashboard({ userId }: DashboardProps) {
     }
   }
 
+  const handleViewInterviews = (application: Application) => {
+    setSelectedApplicationForInterview(application)
+    setInterviewDialogOpen(true)
+  }
+
+  const handleInterviewDialogClose = (open: boolean) => {
+    setInterviewDialogOpen(open)
+    if (!open) {
+      setSelectedApplicationForInterview(null)
+    }
+  }
+
+  const handleExport = () => {
+    const filteredApps = getFilteredApplications()
+    exportApplicationsToCSV(filteredApps)
+  }
+
+  const handleSelectInterview = (interview: Interview) => {
+    const app = applications.find((a) => a.id === interview.application_id)
+    if (app) {
+      setSelectedApplicationForInterview(app)
+      setInterviewDialogOpen(true)
+    }
+  }
+
+  const filteredApplications = getFilteredApplications()
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -118,7 +181,21 @@ export default function Dashboard({ userId }: DashboardProps) {
 
       <StatsCards applications={applications} />
 
-      <Tabs defaultValue="board" className="mt-6">
+      <div className="mt-6">
+        <SearchFilter
+          search={searchQuery}
+          statusFilter={filterStatus}
+          priorityFilter={filterPriority}
+          workTypeFilter={filterWorkType}
+          onSearchChange={setSearchQuery}
+          onStatusFilter={setFilterStatus}
+          onPriorityFilter={setFilterPriority}
+          onWorkTypeFilter={setFilterWorkType}
+          onExport={handleExport}
+        />
+      </div>
+
+      <Tabs defaultValue="board" className="mt-2">
         <TabsList>
           <TabsTrigger value="board">
             <LayoutGrid className="mr-2 h-4 w-4" />
@@ -128,15 +205,15 @@ export default function Dashboard({ userId }: DashboardProps) {
             <TableIcon className="mr-2 h-4 w-4" />
             Table View
           </TabsTrigger>
-          <TabsTrigger value="calendar" disabled>
+          <TabsTrigger value="calendar">
             <CalendarIcon className="mr-2 h-4 w-4" />
-            Calendar View (Coming Soon)
+            Calendar View
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="board" className="mt-6">
           <BoardView
-            applications={applications}
+            applications={filteredApplications}
             onEdit={handleEdit}
             onDelete={handleDelete}
             onStatusChange={handleStatusChange}
@@ -145,9 +222,22 @@ export default function Dashboard({ userId }: DashboardProps) {
         </TabsContent>
 
         <TabsContent value="table" className="mt-6">
-          <div className="border rounded-lg p-8 text-center text-muted-foreground">
-            Table view coming soon...
-          </div>
+          <TableView
+            applications={filteredApplications}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onStatusChange={handleStatusChange}
+            onViewInterviews={handleViewInterviews}
+          />
+        </TabsContent>
+
+        <TabsContent value="calendar" className="mt-6">
+          <CalendarView
+            applications={filteredApplications}
+            interviews={interviews}
+            onSelectApplication={handleEdit}
+            onSelectInterview={handleSelectInterview}
+          />
         </TabsContent>
       </Tabs>
 
@@ -156,6 +246,14 @@ export default function Dashboard({ userId }: DashboardProps) {
         onOpenChange={handleDialogClose}
         editingApplication={editingApplication}
         userId={userId}
+      />
+
+      <InterviewDialog
+        open={interviewDialogOpen}
+        onOpenChange={handleInterviewDialogClose}
+        application={selectedApplicationForInterview}
+        interviews={interviews}
+        onInterviewsChange={setInterviews}
       />
     </div>
   )
