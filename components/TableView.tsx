@@ -18,6 +18,8 @@ import {
   Trash2,
   ExternalLink,
   ChevronsUpDown,
+  Eye,
+  Plus,
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -29,6 +31,7 @@ interface TableViewProps {
   onDelete: (id: string) => void
   onStatusChange: (id: string, status: Application['status']) => void
   onViewInterviews: (application: Application) => void
+  onViewDetails: (application: Application) => void
 }
 
 type SortField = 'company' | 'role' | 'status' | 'priority' | 'salary_max' | 'created_at' | 'deadline'
@@ -72,6 +75,7 @@ export default function TableView({
   onDelete,
   onStatusChange,
   onViewInterviews,
+  onViewDetails,
 }: TableViewProps) {
   const [sortField, setSortField] = useState<SortField>('created_at')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
@@ -217,7 +221,18 @@ export default function TableView({
           </thead>
           <tbody>
             {sortedApplications.map((app) => (
-              <tr key={app.id} className="border-t hover:bg-muted/30">
+              <tr
+                key={app.id}
+                className="border-t hover:bg-muted/30 cursor-pointer"
+                onClick={(e) => {
+                  // Don't trigger if clicking on a button or dropdown
+                  const target = e.target as HTMLElement
+                  if (target.closest('button') || target.closest('[role="menu"]') || target.closest('a')) {
+                    return
+                  }
+                  onViewDetails(app)
+                }}
+              >
                 <td className="p-3">
                   <div className="font-medium">{app.company}</div>
                   {app.job_url && (
@@ -285,13 +300,17 @@ export default function TableView({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onViewDetails(app)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onEdit(app)}>
                         <Pencil className="mr-2 h-4 w-4" />
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onViewInterviews(app)}>
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        Interviews
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Interview
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => onDelete(app.id)}

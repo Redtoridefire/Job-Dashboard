@@ -13,6 +13,7 @@ import TableView from './TableView'
 import CalendarView from './CalendarView'
 import SearchFilter from './SearchFilter'
 import InterviewDialog from './InterviewDialog'
+import JobDetailModal from './JobDetailModal'
 import StatsCards from './StatsCards'
 import { exportApplicationsToCSV } from '@/lib/export'
 
@@ -29,6 +30,8 @@ export default function Dashboard({ userId }: DashboardProps) {
   const [editingApplication, setEditingApplication] = useState<Application | null>(null)
   const [interviewDialogOpen, setInterviewDialogOpen] = useState(false)
   const [selectedApplicationForInterview, setSelectedApplicationForInterview] = useState<Application | null>(null)
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
+  const [selectedApplicationForDetails, setSelectedApplicationForDetails] = useState<Application | null>(null)
 
   const {
     applications,
@@ -126,6 +129,23 @@ export default function Dashboard({ userId }: DashboardProps) {
     }
   }
 
+  const handleViewDetails = (application: Application) => {
+    setSelectedApplicationForDetails(application)
+    setDetailModalOpen(true)
+  }
+
+  const handleDetailModalClose = (open: boolean) => {
+    setDetailModalOpen(open)
+    if (!open) {
+      setSelectedApplicationForDetails(null)
+    }
+  }
+
+  const handleAddInterview = (application: Application) => {
+    setSelectedApplicationForInterview(application)
+    setInterviewDialogOpen(true)
+  }
+
   const handleViewInterviews = (application: Application) => {
     setSelectedApplicationForInterview(application)
     setInterviewDialogOpen(true)
@@ -149,6 +169,24 @@ export default function Dashboard({ userId }: DashboardProps) {
       setSelectedApplicationForInterview(app)
       setInterviewDialogOpen(true)
     }
+  }
+
+  const handleEditFromDetail = (application: Application) => {
+    setDetailModalOpen(false)
+    setSelectedApplicationForDetails(null)
+    handleEdit(application)
+  }
+
+  const handleAddInterviewFromDetail = (application: Application) => {
+    setDetailModalOpen(false)
+    setSelectedApplicationForDetails(null)
+    handleAddInterview(application)
+  }
+
+  const handleViewInterviewsFromDetail = (application: Application) => {
+    setDetailModalOpen(false)
+    setSelectedApplicationForDetails(null)
+    handleViewInterviews(application)
   }
 
   const filteredApplications = getFilteredApplications()
@@ -218,6 +256,8 @@ export default function Dashboard({ userId }: DashboardProps) {
             onDelete={handleDelete}
             onStatusChange={handleStatusChange}
             onAddNew={handleAddNew}
+            onViewDetails={handleViewDetails}
+            onAddInterview={handleAddInterview}
           />
         </TabsContent>
 
@@ -228,6 +268,7 @@ export default function Dashboard({ userId }: DashboardProps) {
             onDelete={handleDelete}
             onStatusChange={handleStatusChange}
             onViewInterviews={handleViewInterviews}
+            onViewDetails={handleViewDetails}
           />
         </TabsContent>
 
@@ -235,7 +276,7 @@ export default function Dashboard({ userId }: DashboardProps) {
           <CalendarView
             applications={filteredApplications}
             interviews={interviews}
-            onSelectApplication={handleEdit}
+            onSelectApplication={handleViewDetails}
             onSelectInterview={handleSelectInterview}
           />
         </TabsContent>
@@ -254,6 +295,16 @@ export default function Dashboard({ userId }: DashboardProps) {
         application={selectedApplicationForInterview}
         interviews={interviews}
         onInterviewsChange={setInterviews}
+      />
+
+      <JobDetailModal
+        open={detailModalOpen}
+        onOpenChange={handleDetailModalClose}
+        application={selectedApplicationForDetails}
+        interviews={interviews}
+        onEdit={handleEditFromDetail}
+        onAddInterview={handleAddInterviewFromDetail}
+        onViewInterviews={handleViewInterviewsFromDetail}
       />
     </div>
   )
