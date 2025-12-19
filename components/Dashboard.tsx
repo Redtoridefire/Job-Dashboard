@@ -6,7 +6,16 @@ import { useAppStore } from '@/lib/store'
 import { Database } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Plus, LayoutGrid, Table as TableIcon, Calendar as CalendarIcon } from 'lucide-react'
+import {
+  Plus,
+  LayoutGrid,
+  Table as TableIcon,
+  Calendar as CalendarIcon,
+  BarChart3,
+  FileText,
+  Settings,
+  Link2,
+} from 'lucide-react'
 import AddJobDialog from './AddJobDialog'
 import BoardView from './BoardView'
 import TableView from './TableView'
@@ -15,10 +24,15 @@ import SearchFilter from './SearchFilter'
 import InterviewDialog from './InterviewDialog'
 import JobDetailModal from './JobDetailModal'
 import StatsCards from './StatsCards'
+import AnalyticsDashboard from './AnalyticsDashboard'
+import ResumeManager from './ResumeManager'
+import IntegrationsPanel from './IntegrationsPanel'
+import { ThemeToggle } from './ThemeToggle'
 import { exportApplicationsToCSV } from '@/lib/export'
 
 type Application = Database['public']['Tables']['applications']['Row']
 type Interview = Database['public']['Tables']['interviews']['Row']
+type Resume = Database['public']['Tables']['resumes']['Row']
 
 interface DashboardProps {
   userId: string
@@ -32,6 +46,10 @@ export default function Dashboard({ userId }: DashboardProps) {
   const [selectedApplicationForInterview, setSelectedApplicationForInterview] = useState<Application | null>(null)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [selectedApplicationForDetails, setSelectedApplicationForDetails] = useState<Application | null>(null)
+  const [resumeManagerOpen, setResumeManagerOpen] = useState(false)
+  const [integrationsOpen, setIntegrationsOpen] = useState(false)
+  const [resumes, setResumes] = useState<Resume[]>([])
+  const [activeTab, setActiveTab] = useState('board')
 
   const {
     applications,
@@ -59,8 +77,8 @@ export default function Dashboard({ userId }: DashboardProps) {
 
   const loadData = async () => {
     try {
-      // Load applications and interviews in parallel
-      const [applicationsResult, interviewsResult] = await Promise.all([
+      // Load applications, interviews, and resumes in parallel
+      const [applicationsResult, interviewsResult, resumesResult] = await Promise.all([
         supabase
           .from('applications')
           .select('*')
@@ -70,6 +88,11 @@ export default function Dashboard({ userId }: DashboardProps) {
           .from('interviews')
           .select('*')
           .order('interview_date', { ascending: true }),
+        supabase
+          .from('resumes')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false }),
       ])
 
       if (applicationsResult.error) throw applicationsResult.error
@@ -77,6 +100,7 @@ export default function Dashboard({ userId }: DashboardProps) {
 
       setApplications(applicationsResult.data || [])
       setInterviews(interviewsResult.data || [])
+      setResumes(resumesResult.data || [])
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -211,10 +235,19 @@ export default function Dashboard({ userId }: DashboardProps) {
             Track and manage your job applications
           </p>
         </div>
-        <Button onClick={handleAddNew}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Application
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => setResumeManagerOpen(true)} title="Resume Repository">
+            <FileText className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" onClick={() => setIntegrationsOpen(true)} title="Integrations">
+            <Link2 className="h-4 w-4" />
+          </Button>
+          <ThemeToggle />
+          <Button onClick={handleAddNew}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Application
+          </Button>
+        </div>
       </div>
 
       <StatsCards applications={applications} />
@@ -233,7 +266,7 @@ export default function Dashboard({ userId }: DashboardProps) {
         />
       </div>
 
-      <Tabs defaultValue="board" className="mt-2">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
         <TabsList>
           <TabsTrigger value="board">
             <LayoutGrid className="mr-2 h-4 w-4" />
@@ -246,6 +279,10 @@ export default function Dashboard({ userId }: DashboardProps) {
           <TabsTrigger value="calendar">
             <CalendarIcon className="mr-2 h-4 w-4" />
             Calendar View
+          </TabsTrigger>
+          <TabsTrigger value="analytics">
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Analytics
           </TabsTrigger>
         </TabsList>
 
@@ -280,6 +317,13 @@ export default function Dashboard({ userId }: DashboardProps) {
             onSelectInterview={handleSelectInterview}
           />
         </TabsContent>
+
+        <TabsContent value="analytics" className="mt-6">
+          <AnalyticsDashboard
+            applications={applications}
+            interviews={interviews}
+          />
+        </TabsContent>
       </Tabs>
 
       <AddJobDialog
@@ -305,6 +349,20 @@ export default function Dashboard({ userId }: DashboardProps) {
         onEdit={handleEditFromDetail}
         onAddInterview={handleAddInterviewFromDetail}
         onViewInterviews={handleViewInterviewsFromDetail}
+      />
+
+      <ResumeManager
+        open={resumeManagerOpen}
+        onOpenChange={setResumeManagerOpen}
+        userId={userId}
+        resumes={resumes}
+        onResumesChange={setResumes}
+      />
+
+      <IntegrationsPanel
+        open={integrationsOpen}
+        onOpenChange={setIntegrationsOpen}
+        userId={userId}
       />
     </div>
   )
