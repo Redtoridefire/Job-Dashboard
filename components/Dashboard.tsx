@@ -3,10 +3,24 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useAppStore } from '@/lib/store'
+import { useExploreMode, demoApplications, demoInterviews } from '@/lib/explore-context'
 import { Database } from '@/types/database'
+import { User } from '@supabase/supabase-js'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Plus, LayoutGrid, Table as TableIcon, Calendar as CalendarIcon } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import {
+  Plus,
+  LayoutGrid,
+  Table as TableIcon,
+  Calendar as CalendarIcon,
+  BarChart3,
+  FileText,
+  Link2,
+  UserCircle,
+  Compass,
+  LogOut,
+} from 'lucide-react'
 import AddJobDialog from './AddJobDialog'
 import BoardView from './BoardView'
 import TableView from './TableView'
@@ -15,16 +29,25 @@ import SearchFilter from './SearchFilter'
 import InterviewDialog from './InterviewDialog'
 import JobDetailModal from './JobDetailModal'
 import StatsCards from './StatsCards'
+import AnalyticsDashboard from './AnalyticsDashboard'
+import ResumeManager from './ResumeManager'
+import IntegrationsPanel from './IntegrationsPanel'
+import AccountSettings from './AccountSettings'
+import { ThemeToggle } from './ThemeToggle'
+import { FeatureLockButton, SignUpPromptDialog } from './FeatureLock'
 import { exportApplicationsToCSV } from '@/lib/export'
 
 type Application = Database['public']['Tables']['applications']['Row']
 type Interview = Database['public']['Tables']['interviews']['Row']
+type Resume = Database['public']['Tables']['resumes']['Row']
 
 interface DashboardProps {
   userId: string
+  user?: User
+  isExploreMode?: boolean
 }
 
-export default function Dashboard({ userId }: DashboardProps) {
+export default function Dashboard({ userId, user, isExploreMode = false }: DashboardProps) {
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingApplication, setEditingApplication] = useState<Application | null>(null)
@@ -32,6 +55,13 @@ export default function Dashboard({ userId }: DashboardProps) {
   const [selectedApplicationForInterview, setSelectedApplicationForInterview] = useState<Application | null>(null)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [selectedApplicationForDetails, setSelectedApplicationForDetails] = useState<Application | null>(null)
+  const [resumeManagerOpen, setResumeManagerOpen] = useState(false)
+  const [integrationsOpen, setIntegrationsOpen] = useState(false)
+  const [accountSettingsOpen, setAccountSettingsOpen] = useState(false)
+  const [resumes, setResumes] = useState<Resume[]>([])
+  const [activeTab, setActiveTab] = useState('board')
+
+  const { exitExploreMode, setShowSignUpPrompt } = useExploreMode()
 
   const {
     applications,
@@ -55,12 +85,21 @@ export default function Dashboard({ userId }: DashboardProps) {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [isExploreMode])
 
   const loadData = async () => {
+    // In explore mode, use demo data
+    if (isExploreMode) {
+      setApplications(demoApplications as Application[])
+      setInterviews(demoInterviews as Interview[])
+      setResumes([])
+      setLoading(false)
+      return
+    }
+
     try {
-      // Load applications and interviews in parallel
-      const [applicationsResult, interviewsResult] = await Promise.all([
+      // Load applications, interviews, and resumes in parallel
+      const [applicationsResult, interviewsResult, resumesResult] = await Promise.all([
         supabase
           .from('applications')
           .select('*')
@@ -70,6 +109,11 @@ export default function Dashboard({ userId }: DashboardProps) {
           .from('interviews')
           .select('*')
           .order('interview_date', { ascending: true }),
+        supabase
+          .from('resumes')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false }),
       ])
 
       if (applicationsResult.error) throw applicationsResult.error
@@ -77,11 +121,16 @@ export default function Dashboard({ userId }: DashboardProps) {
 
       setApplications(applicationsResult.data || [])
       setInterviews(interviewsResult.data || [])
+      setResumes(resumesResult.data || [])
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
   }
 
   const handleEdit = (application: Application) => {
@@ -204,6 +253,30 @@ export default function Dashboard({ userId }: DashboardProps) {
 
   return (
     <div className="container mx-auto p-6">
+      {/* Explore Mode Banner */}
+      {isExploreMode && (
+        <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Compass className="h-5 w-5 text-primary" />
+            <div>
+              <p className="font-medium">Explore Mode</p>
+              <p className="text-sm text-muted-foreground">
+                You&apos;re viewing sample data. Sign up to save your own applications!
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={exitExploreMode}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Exit
+            </Button>
+            <Button size="sm" onClick={() => setShowSignUpPrompt(true)}>
+              Sign Up
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Job Search Dashboard</h1>
@@ -211,10 +284,50 @@ export default function Dashboard({ userId }: DashboardProps) {
             Track and manage your job applications
           </p>
         </div>
-        <Button onClick={handleAddNew}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Application
-        </Button>
+        <div className="flex items-center gap-2">
+          {isExploreMode ? (
+            <>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowSignUpPrompt(true)}
+                title="Resume Repository (Sign up required)"
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowSignUpPrompt(true)}
+                title="Integrations (Sign up required)"
+              >
+                <Link2 className="h-4 w-4" />
+              </Button>
+              <ThemeToggle />
+              <FeatureLockButton feature="add applications">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Application
+              </FeatureLockButton>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" size="icon" onClick={() => setResumeManagerOpen(true)} title="Resume Repository">
+                <FileText className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => setIntegrationsOpen(true)} title="Integrations">
+                <Link2 className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => setAccountSettingsOpen(true)} title="Account Settings">
+                <UserCircle className="h-4 w-4" />
+              </Button>
+              <ThemeToggle />
+              <Button onClick={handleAddNew}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Application
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <StatsCards applications={applications} />
@@ -233,7 +346,7 @@ export default function Dashboard({ userId }: DashboardProps) {
         />
       </div>
 
-      <Tabs defaultValue="board" className="mt-2">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
         <TabsList>
           <TabsTrigger value="board">
             <LayoutGrid className="mr-2 h-4 w-4" />
@@ -246,6 +359,10 @@ export default function Dashboard({ userId }: DashboardProps) {
           <TabsTrigger value="calendar">
             <CalendarIcon className="mr-2 h-4 w-4" />
             Calendar View
+          </TabsTrigger>
+          <TabsTrigger value="analytics">
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Analytics
           </TabsTrigger>
         </TabsList>
 
@@ -280,6 +397,13 @@ export default function Dashboard({ userId }: DashboardProps) {
             onSelectInterview={handleSelectInterview}
           />
         </TabsContent>
+
+        <TabsContent value="analytics" className="mt-6">
+          <AnalyticsDashboard
+            applications={applications}
+            interviews={interviews}
+          />
+        </TabsContent>
       </Tabs>
 
       <AddJobDialog
@@ -306,6 +430,32 @@ export default function Dashboard({ userId }: DashboardProps) {
         onAddInterview={handleAddInterviewFromDetail}
         onViewInterviews={handleViewInterviewsFromDetail}
       />
+
+      <ResumeManager
+        open={resumeManagerOpen}
+        onOpenChange={setResumeManagerOpen}
+        userId={userId}
+        resumes={resumes}
+        onResumesChange={setResumes}
+      />
+
+      <IntegrationsPanel
+        open={integrationsOpen}
+        onOpenChange={setIntegrationsOpen}
+        userId={userId}
+      />
+
+      {user && (
+        <AccountSettings
+          open={accountSettingsOpen}
+          onOpenChange={setAccountSettingsOpen}
+          user={user}
+          onSignOut={handleSignOut}
+        />
+      )}
+
+      {/* Sign up prompt dialog for explore mode */}
+      <SignUpPromptDialog />
     </div>
   )
 }

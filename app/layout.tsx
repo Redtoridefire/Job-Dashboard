@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { ThemeProvider } from '@/components/ThemeProvider'
+import { ExploreModeProvider } from '@/lib/explore-context'
 
 export const metadata: Metadata = {
   title: 'Job Search Dashboard - Track Your Applications',
@@ -12,8 +14,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="font-sans">{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className="font-sans">
+        <ExploreModeProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </ExploreModeProvider>
+      </body>
     </html>
   )
 }
