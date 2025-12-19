@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
+import { useExploreMode } from '@/lib/explore-context'
 import { User } from '@supabase/supabase-js'
 import Dashboard from '@/components/Dashboard'
 import Auth from '@/components/Auth'
@@ -9,6 +10,7 @@ import Auth from '@/components/Auth'
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const { isExploreMode } = useExploreMode()
   const supabase = createClient()
 
   useEffect(() => {
@@ -40,9 +42,14 @@ export default function Home() {
     )
   }
 
+  // Show dashboard in explore mode with demo data
+  if (isExploreMode) {
+    return <Dashboard userId="demo-user" isExploreMode={true} />
+  }
+
   if (!user) {
     return <Auth />
   }
 
-  return <Dashboard userId={user.id} />
+  return <Dashboard userId={user.id} user={user} />
 }

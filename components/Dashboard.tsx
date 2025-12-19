@@ -3,9 +3,12 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useAppStore } from '@/lib/store'
+import { useExploreMode, demoApplications, demoInterviews } from '@/lib/explore-context'
 import { Database } from '@/types/database'
+import { User } from '@supabase/supabase-js'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
 import {
   Plus,
   LayoutGrid,
@@ -13,8 +16,10 @@ import {
   Calendar as CalendarIcon,
   BarChart3,
   FileText,
-  Settings,
   Link2,
+  UserCircle,
+  Compass,
+  LogOut,
 } from 'lucide-react'
 import AddJobDialog from './AddJobDialog'
 import BoardView from './BoardView'
@@ -27,7 +32,9 @@ import StatsCards from './StatsCards'
 import AnalyticsDashboard from './AnalyticsDashboard'
 import ResumeManager from './ResumeManager'
 import IntegrationsPanel from './IntegrationsPanel'
+import AccountSettings from './AccountSettings'
 import { ThemeToggle } from './ThemeToggle'
+import { FeatureLockButton, SignUpPromptDialog } from './FeatureLock'
 import { exportApplicationsToCSV } from '@/lib/export'
 
 type Application = Database['public']['Tables']['applications']['Row']
@@ -36,9 +43,11 @@ type Resume = Database['public']['Tables']['resumes']['Row']
 
 interface DashboardProps {
   userId: string
+  user?: User
+  isExploreMode?: boolean
 }
 
-export default function Dashboard({ userId }: DashboardProps) {
+export default function Dashboard({ userId, user, isExploreMode = false }: DashboardProps) {
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingApplication, setEditingApplication] = useState<Application | null>(null)
@@ -48,8 +57,11 @@ export default function Dashboard({ userId }: DashboardProps) {
   const [selectedApplicationForDetails, setSelectedApplicationForDetails] = useState<Application | null>(null)
   const [resumeManagerOpen, setResumeManagerOpen] = useState(false)
   const [integrationsOpen, setIntegrationsOpen] = useState(false)
+  const [accountSettingsOpen, setAccountSettingsOpen] = useState(false)
   const [resumes, setResumes] = useState<Resume[]>([])
   const [activeTab, setActiveTab] = useState('board')
+
+  const { exitExploreMode, setShowSignUpPrompt } = useExploreMode()
 
   const {
     applications,
@@ -73,9 +85,18 @@ export default function Dashboard({ userId }: DashboardProps) {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [isExploreMode])
 
   const loadData = async () => {
+    // In explore mode, use demo data
+    if (isExploreMode) {
+      setApplications(demoApplications as Application[])
+      setInterviews(demoInterviews as Interview[])
+      setResumes([])
+      setLoading(false)
+      return
+    }
+
     try {
       // Load applications, interviews, and resumes in parallel
       const [applicationsResult, interviewsResult, resumesResult] = await Promise.all([
@@ -106,6 +127,10 @@ export default function Dashboard({ userId }: DashboardProps) {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
   }
 
   const handleEdit = (application: Application) => {
@@ -228,6 +253,30 @@ export default function Dashboard({ userId }: DashboardProps) {
 
   return (
     <div className="container mx-auto p-6">
+      {/* Explore Mode Banner */}
+      {isExploreMode && (
+        <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Compass className="h-5 w-5 text-primary" />
+            <div>
+              <p className="font-medium">Explore Mode</p>
+              <p className="text-sm text-muted-foreground">
+                You&apos;re viewing sample data. Sign up to save your own applications!
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={exitExploreMode}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Exit
+            </Button>
+            <Button size="sm" onClick={() => setShowSignUpPrompt(true)}>
+              Sign Up
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Job Search Dashboard</h1>
@@ -236,17 +285,48 @@ export default function Dashboard({ userId }: DashboardProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => setResumeManagerOpen(true)} title="Resume Repository">
-            <FileText className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={() => setIntegrationsOpen(true)} title="Integrations">
-            <Link2 className="h-4 w-4" />
-          </Button>
-          <ThemeToggle />
-          <Button onClick={handleAddNew}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Application
-          </Button>
+          {isExploreMode ? (
+            <>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowSignUpPrompt(true)}
+                title="Resume Repository (Sign up required)"
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowSignUpPrompt(true)}
+                title="Integrations (Sign up required)"
+              >
+                <Link2 className="h-4 w-4" />
+              </Button>
+              <ThemeToggle />
+              <FeatureLockButton feature="add applications">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Application
+              </FeatureLockButton>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" size="icon" onClick={() => setResumeManagerOpen(true)} title="Resume Repository">
+                <FileText className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => setIntegrationsOpen(true)} title="Integrations">
+                <Link2 className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => setAccountSettingsOpen(true)} title="Account Settings">
+                <UserCircle className="h-4 w-4" />
+              </Button>
+              <ThemeToggle />
+              <Button onClick={handleAddNew}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Application
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -364,6 +444,18 @@ export default function Dashboard({ userId }: DashboardProps) {
         onOpenChange={setIntegrationsOpen}
         userId={userId}
       />
+
+      {user && (
+        <AccountSettings
+          open={accountSettingsOpen}
+          onOpenChange={setAccountSettingsOpen}
+          user={user}
+          onSignOut={handleSignOut}
+        />
+      )}
+
+      {/* Sign up prompt dialog for explore mode */}
+      <SignUpPromptDialog />
     </div>
   )
 }
