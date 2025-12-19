@@ -48,67 +48,71 @@ export default function SearchFilter({
   }
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 mb-6">
-      <div className="relative flex-1">
+    <div className="flex flex-col gap-3 mb-4 sm:mb-6">
+      {/* Search bar - full width on mobile */}
+      <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search company, role, location..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9"
+          className="pl-9 h-10 sm:h-9 text-base sm:text-sm"
         />
       </div>
 
-      <Select value={statusFilter || 'all'} onValueChange={(v) => onStatusFilter(v === 'all' ? null : v)}>
-        <SelectTrigger className="w-full sm:w-[150px]">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Status</SelectItem>
-          <SelectItem value="new">New</SelectItem>
-          <SelectItem value="submitted">Submitted</SelectItem>
-          <SelectItem value="interviewing">Interviewing</SelectItem>
-          <SelectItem value="offer">Offer</SelectItem>
-          <SelectItem value="accepted">Accepted</SelectItem>
-          <SelectItem value="rejected">Rejected</SelectItem>
-        </SelectContent>
-      </Select>
+      {/* Filters row - scrollable on mobile */}
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+        <Select value={statusFilter || 'all'} onValueChange={(v) => onStatusFilter(v === 'all' ? null : v)}>
+          <SelectTrigger className="w-[120px] sm:w-[140px] flex-shrink-0 h-9 text-sm">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="new">New</SelectItem>
+            <SelectItem value="submitted">Submitted</SelectItem>
+            <SelectItem value="interviewing">Interviewing</SelectItem>
+            <SelectItem value="offer">Offer</SelectItem>
+            <SelectItem value="accepted">Accepted</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+          </SelectContent>
+        </Select>
 
-      <Select value={priorityFilter || 'all'} onValueChange={(v) => onPriorityFilter(v === 'all' ? null : v)}>
-        <SelectTrigger className="w-full sm:w-[150px]">
-          <SelectValue placeholder="Priority" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Priority</SelectItem>
-          <SelectItem value="Dream">⭐ Dream</SelectItem>
-          <SelectItem value="A">A - High</SelectItem>
-          <SelectItem value="B">B - Medium</SelectItem>
-          <SelectItem value="C">C - Low</SelectItem>
-        </SelectContent>
-      </Select>
+        <Select value={priorityFilter || 'all'} onValueChange={(v) => onPriorityFilter(v === 'all' ? null : v)}>
+          <SelectTrigger className="w-[120px] sm:w-[140px] flex-shrink-0 h-9 text-sm">
+            <SelectValue placeholder="Priority" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Priority</SelectItem>
+            <SelectItem value="Dream">⭐ Dream</SelectItem>
+            <SelectItem value="A">A - High</SelectItem>
+            <SelectItem value="B">B - Medium</SelectItem>
+            <SelectItem value="C">C - Low</SelectItem>
+          </SelectContent>
+        </Select>
 
-      <Select value={workTypeFilter || 'all'} onValueChange={(v) => onWorkTypeFilter(v === 'all' ? null : v)}>
-        <SelectTrigger className="w-full sm:w-[150px]">
-          <SelectValue placeholder="Work Type" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Types</SelectItem>
-          <SelectItem value="remote">Remote</SelectItem>
-          <SelectItem value="hybrid">Hybrid</SelectItem>
-          <SelectItem value="onsite">On-site</SelectItem>
-        </SelectContent>
-      </Select>
+        <Select value={workTypeFilter || 'all'} onValueChange={(v) => onWorkTypeFilter(v === 'all' ? null : v)}>
+          <SelectTrigger className="w-[110px] sm:w-[130px] flex-shrink-0 h-9 text-sm">
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="remote">Remote</SelectItem>
+            <SelectItem value="hybrid">Hybrid</SelectItem>
+            <SelectItem value="onsite">On-site</SelectItem>
+          </SelectContent>
+        </Select>
 
-      {hasFilters && (
-        <Button variant="ghost" size="icon" onClick={clearFilters} title="Clear filters">
-          <X className="h-4 w-4" />
+        {hasFilters && (
+          <Button variant="ghost" size="icon" onClick={clearFilters} title="Clear filters" className="flex-shrink-0 h-9 w-9">
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+
+        <Button variant="outline" onClick={onExport} title="Export to CSV" className="flex-shrink-0 h-9 text-sm">
+          <Download className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Export</span>
         </Button>
-      )}
-
-      <Button variant="outline" onClick={onExport} title="Export to CSV">
-        <Download className="h-4 w-4 mr-2" />
-        Export
-      </Button>
+      </div>
     </div>
   )
 }

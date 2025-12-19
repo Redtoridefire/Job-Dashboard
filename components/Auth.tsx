@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { Briefcase, Compass } from 'lucide-react'
 
 export default function Auth() {
@@ -59,36 +60,41 @@ export default function Auth() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="w-full max-w-md p-6">
-        <div className="text-center mb-8">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4 sm:px-6">
+      {/* Theme toggle in top right corner */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
+      <div className="w-full max-w-md py-8">
+        <div className="text-center mb-6 sm:mb-8">
           <div className="flex items-center justify-center mb-4">
-            <Briefcase className="h-12 w-12 text-primary" />
+            <Briefcase className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold">Job Search Dashboard</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold">Job Search Dashboard</h1>
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
             Track and manage your job applications
           </p>
         </div>
 
         <Tabs defaultValue="signin" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsTrigger value="signin" className="text-sm sm:text-base">Sign In</TabsTrigger>
+            <TabsTrigger value="signup" className="text-sm sm:text-base">Sign Up</TabsTrigger>
           </TabsList>
 
           <TabsContent value="signin">
             <Card>
-              <CardHeader>
-                <CardTitle>Welcome Back</CardTitle>
-                <CardDescription>
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-lg sm:text-xl">Welcome Back</CardTitle>
+                <CardDescription className="text-sm">
                   Sign in to your account to continue
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email" className="text-sm">Email</Label>
                     <Input
                       id="signin-email"
                       type="email"
@@ -96,10 +102,12 @@ export default function Auth() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      className="h-11 text-base"
+                      autoComplete="email"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signin-password" className="text-sm">Password</Label>
                     <Input
                       id="signin-password"
                       type="password"
@@ -107,20 +115,22 @@ export default function Auth() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      className="h-11 text-base"
+                      autoComplete="current-password"
                     />
                   </div>
                   {message && (
                     <div
                       className={`text-sm p-3 rounded ${
                         message.type === 'error'
-                          ? 'bg-red-50 text-red-600'
-                          : 'bg-green-50 text-green-600'
+                          ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                          : 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
                       }`}
                     >
                       {message.text}
                     </div>
                   )}
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full h-11 text-base" disabled={loading}>
                     {loading ? 'Signing In...' : 'Sign In'}
                   </Button>
                 </form>
@@ -130,16 +140,16 @@ export default function Auth() {
 
           <TabsContent value="signup">
             <Card>
-              <CardHeader>
-                <CardTitle>Create Account</CardTitle>
-                <CardDescription>
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-lg sm:text-xl">Create Account</CardTitle>
+                <CardDescription className="text-sm">
                   Sign up to start tracking your job search
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email" className="text-sm">Email</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -147,10 +157,12 @@ export default function Auth() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      className="h-11 text-base"
+                      autoComplete="email"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password" className="text-sm">Password</Label>
                     <Input
                       id="signup-password"
                       type="password"
@@ -159,6 +171,8 @@ export default function Auth() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       minLength={6}
+                      className="h-11 text-base"
+                      autoComplete="new-password"
                     />
                     <p className="text-xs text-muted-foreground">
                       Password must be at least 6 characters
@@ -168,14 +182,14 @@ export default function Auth() {
                     <div
                       className={`text-sm p-3 rounded ${
                         message.type === 'error'
-                          ? 'bg-red-50 text-red-600'
-                          : 'bg-green-50 text-green-600'
+                          ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                          : 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
                       }`}
                     >
                       {message.text}
                     </div>
                   )}
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full h-11 text-base" disabled={loading}>
                     {loading ? 'Creating Account...' : 'Sign Up'}
                   </Button>
                 </form>
@@ -190,7 +204,7 @@ export default function Auth() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-gradient-to-br from-blue-50 to-indigo-100 px-2 text-muted-foreground">
+              <span className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-2 text-muted-foreground">
                 Or
               </span>
             </div>
@@ -198,7 +212,7 @@ export default function Auth() {
 
           <Button
             variant="outline"
-            className="w-full mt-4"
+            className="w-full mt-4 h-11 text-base"
             onClick={enterExploreMode}
           >
             <Compass className="mr-2 h-4 w-4" />

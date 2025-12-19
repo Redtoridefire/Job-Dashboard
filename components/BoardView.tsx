@@ -87,7 +87,7 @@ export default function BoardView({
   }
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
+    <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory sm:snap-none">
       {statuses.map((status) => {
         const statusApps = getApplicationsByStatus(status.value)
         const isDragOver = dragOverStatus === status.value
@@ -100,28 +100,30 @@ export default function BoardView({
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, status.value)}
             className={`
-              flex-shrink-0 w-80 rounded-lg border-2 p-4 transition-all duration-200
+              flex-shrink-0 w-[280px] sm:w-72 md:w-80 rounded-lg border-2 p-3 sm:p-4 transition-all duration-200
+              snap-center sm:snap-align-none
               ${status.color}
               ${isDragOver ? 'ring-2 ring-primary ring-offset-2 scale-[1.02]' : ''}
+              dark:bg-opacity-10 dark:border-opacity-30
             `}
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div>
-                <h3 className="font-semibold text-lg">{status.label}</h3>
-                <p className="text-sm text-muted-foreground">{statusApps.length} applications</p>
+                <h3 className="font-semibold text-base sm:text-lg">{status.label}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">{statusApps.length} applications</p>
               </div>
               {status.value === 'new' && (
-                <Button size="sm" variant="ghost" onClick={onAddNew}>
+                <Button size="sm" variant="ghost" onClick={onAddNew} className="h-8 w-8 p-0 sm:h-9 sm:w-9">
                   <Plus className="h-4 w-4" />
                 </Button>
               )}
             </div>
 
-            <div className="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto">
+            <div className="space-y-2 sm:space-y-3 max-h-[calc(100vh-320px)] sm:max-h-[calc(100vh-300px)] overflow-y-auto">
               {statusApps.length === 0 ? (
                 <div
                   className={`
-                    text-center py-8 text-sm text-muted-foreground border-2 border-dashed rounded-lg
+                    text-center py-6 sm:py-8 text-xs sm:text-sm text-muted-foreground border-2 border-dashed rounded-lg
                     ${isDragOver ? 'border-primary bg-primary/5' : 'border-transparent'}
                   `}
                 >
@@ -134,7 +136,7 @@ export default function BoardView({
                     draggable
                     onDragStart={(e) => handleDragStart(e, app)}
                     onDragEnd={handleDragEnd}
-                    className="cursor-grab active:cursor-grabbing"
+                    className="cursor-grab active:cursor-grabbing touch-manipulation"
                   >
                     <JobCard
                       application={app}

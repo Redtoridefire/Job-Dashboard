@@ -252,20 +252,20 @@ export default function Dashboard({ userId, user, isExploreMode = false }: Dashb
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto px-4 py-4 sm:p-6">
       {/* Explore Mode Banner */}
       {isExploreMode && (
-        <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between">
+        <div className="mb-4 p-3 sm:p-4 bg-primary/10 border border-primary/20 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Compass className="h-5 w-5 text-primary" />
+            <Compass className="h-5 w-5 text-primary flex-shrink-0" />
             <div>
-              <p className="font-medium">Explore Mode</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="font-medium text-sm sm:text-base">Explore Mode</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 You&apos;re viewing sample data. Sign up to save your own applications!
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-8 sm:ml-0">
             <Button variant="outline" size="sm" onClick={exitExploreMode}>
               <LogOut className="mr-2 h-4 w-4" />
               Exit
@@ -277,14 +277,15 @@ export default function Dashboard({ userId, user, isExploreMode = false }: Dashb
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-6">
+      {/* Header - Mobile responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Job Search Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Job Search Dashboard</h1>
+          <p className="text-muted-foreground text-sm sm:text-base mt-1">
             Track and manage your job applications
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {isExploreMode ? (
             <>
               <Button
@@ -292,6 +293,7 @@ export default function Dashboard({ userId, user, isExploreMode = false }: Dashb
                 size="icon"
                 onClick={() => setShowSignUpPrompt(true)}
                 title="Resume Repository (Sign up required)"
+                className="h-9 w-9 sm:h-10 sm:w-10"
               >
                 <FileText className="h-4 w-4" />
               </Button>
@@ -300,30 +302,33 @@ export default function Dashboard({ userId, user, isExploreMode = false }: Dashb
                 size="icon"
                 onClick={() => setShowSignUpPrompt(true)}
                 title="Integrations (Sign up required)"
+                className="h-9 w-9 sm:h-10 sm:w-10"
               >
                 <Link2 className="h-4 w-4" />
               </Button>
               <ThemeToggle />
-              <FeatureLockButton feature="add applications">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Application
+              <FeatureLockButton feature="add applications" className="h-9 sm:h-10 text-sm">
+                <Plus className="mr-1 sm:mr-2 h-4 w-4" />
+                <span className="hidden xs:inline">Add</span>
+                <span className="hidden sm:inline"> Application</span>
               </FeatureLockButton>
             </>
           ) : (
             <>
-              <Button variant="outline" size="icon" onClick={() => setResumeManagerOpen(true)} title="Resume Repository">
+              <Button variant="outline" size="icon" onClick={() => setResumeManagerOpen(true)} title="Resume Repository" className="h-9 w-9 sm:h-10 sm:w-10">
                 <FileText className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={() => setIntegrationsOpen(true)} title="Integrations">
+              <Button variant="outline" size="icon" onClick={() => setIntegrationsOpen(true)} title="Integrations" className="h-9 w-9 sm:h-10 sm:w-10">
                 <Link2 className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={() => setAccountSettingsOpen(true)} title="Account Settings">
+              <Button variant="outline" size="icon" onClick={() => setAccountSettingsOpen(true)} title="Account Settings" className="h-9 w-9 sm:h-10 sm:w-10">
                 <UserCircle className="h-4 w-4" />
               </Button>
               <ThemeToggle />
-              <Button onClick={handleAddNew}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Application
+              <Button onClick={handleAddNew} className="h-9 sm:h-10 text-sm">
+                <Plus className="mr-1 sm:mr-2 h-4 w-4" />
+                <span className="hidden xs:inline">Add</span>
+                <span className="hidden sm:inline"> Application</span>
               </Button>
             </>
           )}
@@ -332,7 +337,7 @@ export default function Dashboard({ userId, user, isExploreMode = false }: Dashb
 
       <StatsCards applications={applications} />
 
-      <div className="mt-6">
+      <div className="mt-4 sm:mt-6">
         <SearchFilter
           search={searchQuery}
           statusFilter={filterStatus}
@@ -347,26 +352,32 @@ export default function Dashboard({ userId, user, isExploreMode = false }: Dashb
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
-        <TabsList>
-          <TabsTrigger value="board">
-            <LayoutGrid className="mr-2 h-4 w-4" />
-            Board View
-          </TabsTrigger>
-          <TabsTrigger value="table">
-            <TableIcon className="mr-2 h-4 w-4" />
-            Table View
-          </TabsTrigger>
-          <TabsTrigger value="calendar">
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            Calendar View
-          </TabsTrigger>
-          <TabsTrigger value="analytics">
-            <BarChart3 className="mr-2 h-4 w-4" />
-            Analytics
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+          <TabsList className="inline-flex w-auto min-w-full sm:w-auto">
+            <TabsTrigger value="board" className="text-xs sm:text-sm px-2 sm:px-3">
+              <LayoutGrid className="mr-1 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Board</span>
+              <span className="xs:hidden">Board</span>
+            </TabsTrigger>
+            <TabsTrigger value="table" className="text-xs sm:text-sm px-2 sm:px-3">
+              <TableIcon className="mr-1 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Table</span>
+              <span className="xs:hidden">Table</span>
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="text-xs sm:text-sm px-2 sm:px-3">
+              <CalendarIcon className="mr-1 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Calendar</span>
+              <span className="xs:hidden">Cal</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="text-xs sm:text-sm px-2 sm:px-3">
+              <BarChart3 className="mr-1 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Analytics</span>
+              <span className="xs:hidden">Stats</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="board" className="mt-6">
+        <TabsContent value="board" className="mt-4 sm:mt-6">
           <BoardView
             applications={filteredApplications}
             onEdit={handleEdit}
@@ -378,7 +389,7 @@ export default function Dashboard({ userId, user, isExploreMode = false }: Dashb
           />
         </TabsContent>
 
-        <TabsContent value="table" className="mt-6">
+        <TabsContent value="table" className="mt-4 sm:mt-6">
           <TableView
             applications={filteredApplications}
             onEdit={handleEdit}
@@ -389,7 +400,7 @@ export default function Dashboard({ userId, user, isExploreMode = false }: Dashb
           />
         </TabsContent>
 
-        <TabsContent value="calendar" className="mt-6">
+        <TabsContent value="calendar" className="mt-4 sm:mt-6">
           <CalendarView
             applications={filteredApplications}
             interviews={interviews}
@@ -398,7 +409,7 @@ export default function Dashboard({ userId, user, isExploreMode = false }: Dashb
           />
         </TabsContent>
 
-        <TabsContent value="analytics" className="mt-6">
+        <TabsContent value="analytics" className="mt-4 sm:mt-6">
           <AnalyticsDashboard
             applications={applications}
             interviews={interviews}
