@@ -264,6 +264,72 @@ export type Database = {
           }
         ]
       }
+      user_integrations: {
+        Row: {
+          id: string
+          user_id: string
+          provider: 'google_calendar' | 'telegram'
+          access_token: string | null
+          refresh_token: string | null
+          expires_at: string | null
+          connected: boolean
+          settings: {
+            syncInterviews?: boolean
+            syncDeadlines?: boolean
+            chatId?: string
+            notifications?: {
+              interviews?: boolean
+              deadlines?: boolean
+              statusChanges?: boolean
+            }
+          } | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          provider: 'google_calendar' | 'telegram'
+          access_token?: string | null
+          refresh_token?: string | null
+          expires_at?: string | null
+          connected?: boolean
+          settings?: {
+            syncInterviews?: boolean
+            syncDeadlines?: boolean
+            chatId?: string
+            notifications?: {
+              interviews?: boolean
+              deadlines?: boolean
+              statusChanges?: boolean
+            }
+          } | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          provider?: 'google_calendar' | 'telegram'
+          access_token?: string | null
+          refresh_token?: string | null
+          expires_at?: string | null
+          connected?: boolean
+          settings?: {
+            syncInterviews?: boolean
+            syncDeadlines?: boolean
+            chatId?: string
+            notifications?: {
+              interviews?: boolean
+              deadlines?: boolean
+              statusChanges?: boolean
+            }
+          } | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
