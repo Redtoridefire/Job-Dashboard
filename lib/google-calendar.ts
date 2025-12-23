@@ -2,15 +2,10 @@
 
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
+import { decrypt, encrypt, hashForLogging } from './crypto'
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
-
-interface GoogleTokens {
-  access_token: string
-  refresh_token: string
-  expires_at: string
-}
 
 interface CalendarEvent {
   id?: string
@@ -29,12 +24,6 @@ interface CalendarEvent {
     useDefault: boolean
     overrides?: Array<{ method: string; minutes: number }>
   }
-  conferenceData?: {
-    createRequest?: {
-      requestId: string
-      conferenceSolutionKey: { type: string }
-    }
-  }
 }
 
 interface CalendarEventResponse {
@@ -48,8 +37,18 @@ interface CalendarEventResponse {
   end: { dateTime: string; timeZone?: string }
 }
 
-async function refreshAccessToken(userId: string, refreshToken: string): Promise<string | null> {
+/**
+ * Refresh the access token using the refresh token
+ * Returns new access token or null if refresh failed
+ */
+async function refreshAccessToken(
+  userId: string,
+  encryptedRefreshToken: string
+): Promise<string | null> {
   try {
+    // Decrypt the refresh token
+    const refreshToken = decrypt(encryptedRefreshToken)
+
     const response = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: {
@@ -64,19 +63,28 @@ async function refreshAccessToken(userId: string, refreshToken: string): Promise
     })
 
     if (!response.ok) {
-      console.error('Failed to refresh token:', await response.text())
+      console.error(
+        `Failed to refresh token for user ${hashForLogging(userId)}`
+      )
       return null
     }
 
     const tokens = await response.json()
+
+    // Encrypt the new access token
+    const encryptedAccessToken = encrypt(tokens.access_token)
+    const expiresAt = new Date(
+      Date.now() + tokens.expires_in * 1000
+    ).toISOString()
 
     // Update tokens in database
     const supabase = createRouteHandlerClient({ cookies })
     await supabase
       .from('user_integrations')
       .update({
-        access_token: tokens.access_token,
-        expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+        access_token: encryptedAccessToken,
+        expires_at: expiresAt,
+        updated_at: new Date().toISOString(),
       })
       .eq('user_id', userId)
       .eq('provider', 'google_calendar')
@@ -88,17 +96,25 @@ async function refreshAccessToken(userId: string, refreshToken: string): Promise
   }
 }
 
+/**
+ * Get a valid access token for the user
+ * Automatically refreshes if expired
+ */
 async function getValidAccessToken(userId: string): Promise<string | null> {
   const supabase = createRouteHandlerClient({ cookies })
 
   const { data: integration } = await supabase
     .from('user_integrations')
-    .select('access_token, refresh_token, expires_at')
+    .select('access_token, refresh_token, expires_at, connected')
     .eq('user_id', userId)
     .eq('provider', 'google_calendar')
     .single()
 
-  if (!integration) {
+  if (!integration || !integration.connected) {
+    return null
+  }
+
+  if (!integration.access_token) {
     return null
   }
 
@@ -108,11 +124,21 @@ async function getValidAccessToken(userId: string): Promise<string | null> {
   const bufferMs = 5 * 60 * 1000
 
   if (expiresAt.getTime() - bufferMs <= now.getTime()) {
-    // Token is expired or about to expire, refresh it
+    // Token expired, try to refresh
+    if (!integration.refresh_token) {
+      console.warn(`No refresh token for user ${hashForLogging(userId)}`)
+      return null
+    }
     return await refreshAccessToken(userId, integration.refresh_token)
   }
 
-  return integration.access_token
+  // Decrypt and return the access token
+  try {
+    return decrypt(integration.access_token)
+  } catch (error) {
+    console.error('Failed to decrypt access token:', error)
+    return null
+  }
 }
 
 export async function createCalendarEvent(
@@ -122,13 +148,13 @@ export async function createCalendarEvent(
   const accessToken = await getValidAccessToken(userId)
 
   if (!accessToken) {
-    console.error('No valid access token for user:', userId)
+    console.warn(`No valid access token for user ${hashForLogging(userId)}`)
     return null
   }
 
   try {
     const response = await fetch(
-      'https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1',
+      'https://www.googleapis.com/calendar/v3/calendars/primary/events',
       {
         method: 'POST',
         headers: {
@@ -140,7 +166,8 @@ export async function createCalendarEvent(
     )
 
     if (!response.ok) {
-      console.error('Failed to create calendar event:', await response.text())
+      const error = await response.json()
+      console.error('Failed to create calendar event:', error.error?.message)
       return null
     }
 
@@ -164,7 +191,7 @@ export async function updateCalendarEvent(
 
   try {
     const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`,
       {
         method: 'PATCH',
         headers: {
@@ -176,7 +203,7 @@ export async function updateCalendarEvent(
     )
 
     if (!response.ok) {
-      console.error('Failed to update calendar event:', await response.text())
+      console.error('Failed to update calendar event')
       return null
     }
 
@@ -199,7 +226,7 @@ export async function deleteCalendarEvent(
 
   try {
     const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`,
       {
         method: 'DELETE',
         headers: {
@@ -208,7 +235,7 @@ export async function deleteCalendarEvent(
       }
     )
 
-    return response.ok || response.status === 404 // 404 means already deleted
+    return response.ok || response.status === 404
   } catch (error) {
     console.error('Error deleting calendar event:', error)
     return false
@@ -227,7 +254,7 @@ export async function getCalendarEvent(
 
   try {
     const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -286,7 +313,9 @@ export async function listCalendarEvents(
   }
 }
 
-// Helper to create an interview event
+/**
+ * Create an interview event in Google Calendar
+ */
 export async function createInterviewEvent(
   userId: string,
   options: {
@@ -316,6 +345,7 @@ export async function createInterviewEvent(
   const startTime = new Date(dateTime)
   const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000)
 
+  // Build description with interview details
   let description = `Interview for ${role} at ${company}\n\nType: ${interviewType}`
   if (interviewerNames && interviewerNames.length > 0) {
     description += `\nInterviewers: ${interviewerNames.join(', ')}`
@@ -351,7 +381,9 @@ export async function createInterviewEvent(
   return createCalendarEvent(userId, event)
 }
 
-// Helper to create a deadline event
+/**
+ * Create a deadline event in Google Calendar
+ */
 export async function createDeadlineEvent(
   userId: string,
   options: {
@@ -364,7 +396,6 @@ export async function createDeadlineEvent(
   const { company, role, deadline, notes } = options
 
   const deadlineDate = new Date(deadline)
-  // Set deadline as all-day event end of day
   deadlineDate.setHours(23, 59, 0, 0)
   const startDate = new Date(deadlineDate)
   startDate.setHours(23, 0, 0, 0)
@@ -389,7 +420,7 @@ export async function createDeadlineEvent(
       useDefault: false,
       overrides: [
         { method: 'popup', minutes: 60 },
-        { method: 'email', minutes: 1440 }, // 24 hours before
+        { method: 'email', minutes: 1440 },
       ],
     },
   }
